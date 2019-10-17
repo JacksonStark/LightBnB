@@ -103,9 +103,72 @@ exports.getAllReservations = getAllReservations;
  */
 const getAllProperties = function(options, limit = 10) {
 
+  const queryParams = [];
+
+  let queryString = `
+  SELECT properties.*, AVG(property_reviews.rating) as average_rating
+  FROM properties
+  JOIN property_reviews ON property_id = properties.id
+  `;
+
+  if (options.city) {
+    queryParams.push(`%${options.city}%`);
+    queryString += `${queryParams.length === 1 ? 'WHERE' : 'AND'} city LIKE $${queryParams.length} `;
+  }
+
+  if (options.owner_id) {
+    queryParams.push(`${options.owner_id}`);
+    queryString += `${queryParams.length === 1 ? 'WHERE' : 'AND'} owner_id = $${queryParams.length} `;
+  }
+
+  if (options.minimum_price_per_night) {
+    queryParams.push(options.minimum_price_per_night * 100);
+    queryString += `${queryParams.length === 1 ? 'WHERE' : 'AND'}  cost_per_night > $${queryParams.length} `;
+  }
+
+  if (options.maximum_price_per_night) {
+    queryParams.push(options.maximum_price_per_night * 100);
+    queryString += `${queryParams.length === 1 ? 'WHERE' : 'AND'}  cost_per_night < $${queryParams.length} `;
+  }
+
+  if (options.minimum_rating) {
+    queryParams.push(`${options.minimum_rating}`);
+    queryString += `GROUP BY properties.id HAVING AVG(property_reviews.rating) >= $${queryParams.length} `;
+  } else {
+    queryString += `GROUP BY properties.id`;
+  }
+
+  queryParams.push(limit);
+  queryString += `
+  ORDER BY cost_per_night
+  LIMIT $${queryParams.length};
+  `;
+
+
+
+  console.log(queryString, queryParams);
+
+  return pool.query(queryString, queryParams)
+  .then(res => res.rows);
+
+
+
+
+
+
+
+
+
+
   return pool.query(`
-    SELECT * FROM properties
-    LIMIT $1
+    SELECT properties.*, AVG(property_reviews.rating) as average_rating
+    FROM properties
+    JOIN property_reviews ON property_id = properties.id
+    WHERE city LIKE '%ancouv%'
+    GROUP BY properties.id
+    HAVING AVG(property_reviews.rating) >= 4
+    ORDER BY cost_per_night
+    LIMIT $2;
   `, [limit])
   .then(res => res.rows)
   .catch(err => err);
