@@ -9,6 +9,8 @@ const pool = new Pool ({
   database: 'lightbnb'
 });
 
+module.exports = {
+
 /// USERS
 
 /**
@@ -16,7 +18,8 @@ const pool = new Pool ({
  * @param {String} email The email of the user.
  * @return {Promise<{}>} A promise to the user.
  */
-const getUserWithEmail = function(email) {
+
+getUserWithEmail: function(email) {
   return pool.query(`
     SELECT *
     FROM users
@@ -24,15 +27,17 @@ const getUserWithEmail = function(email) {
   `, [email])
   .then(res => res.rows[0])
   .catch(err => err);
-}
-exports.getUserWithEmail = getUserWithEmail;
+},
+
+
 
 /**
  * Get a single user from the database given their id.
  * @param {string} id The id of the user.
  * @return {Promise<{}>} A promise to the user.
  */
-const getUserWithId = function(id) {
+
+getUserWithId: function(id) {
   return pool.query(`
     SELECT *
     FROM users
@@ -40,10 +45,8 @@ const getUserWithId = function(id) {
   `, [Number(id)])
   .then(res => res.rows[0])
   .catch(err => err);
+},
 
-  // return Promise.resolve(users[id]);
-}
-exports.getUserWithId = getUserWithId;
 
 
 /**
@@ -51,7 +54,8 @@ exports.getUserWithId = getUserWithId;
  * @param {{name: string, password: string, email: string}} user
  * @return {Promise<{}>} A promise to the user.
  */
-const addUser =  function(user) {
+
+addUser:  function(user) {
   return pool.query(`
     INSERT INTO users (name, email, password)
     VALUES ($1, $2, $3)
@@ -59,8 +63,7 @@ const addUser =  function(user) {
   `, [user.name, user.email, user.password])
   .then(res => res.rows[0])
   .catch(err => err);
-}
-exports.addUser = addUser;
+},
 
 
 
@@ -71,7 +74,8 @@ exports.addUser = addUser;
  * @param {string} guest_id The id of the user.
  * @return {Promise<[{}]>} A promise to the reservations.
  */
-const getAllReservations = function(guest_id, limit = 10) {
+
+getAllReservations: function(guest_id, limit = 10) {
   return pool.query(`
     SELECT properties.*, reservations.*, avg(rating) as average_rating
     FROM reservations
@@ -85,11 +89,7 @@ const getAllReservations = function(guest_id, limit = 10) {
   `, [guest_id])
   .then(res => res.rows)
   .catch(err => err)
-
-
-  return getAllProperties(null, 2);
-}
-exports.getAllReservations = getAllReservations;
+},
 
 
 
@@ -101,7 +101,8 @@ exports.getAllReservations = getAllReservations;
  * @param {*} limit The number of results to return.
  * @return {Promise<[{}]>}  A promise to the properties.
  */
-const getAllProperties = function(options, limit = 10) {
+
+getAllProperties: function(options, limit = 10) {
 
   const queryParams = [];
   console.log('beep boop');
@@ -145,15 +146,10 @@ const getAllProperties = function(options, limit = 10) {
   LIMIT $${queryParams.length};
   `;
 
-
-
-  console.log(queryString, queryParams);
-
   return pool.query(queryString, queryParams)
   .then(res => res.rows);
-}
+},
 
-exports.getAllProperties = getAllProperties;
 
 
 /**
@@ -161,20 +157,17 @@ exports.getAllProperties = getAllProperties;
  * @param {{}} property An object containing all of the property details.
  * @return {Promise<{}>} A promise to the property.
  */
-const addProperty = function(property) {
-  console.log('hi')
-  console.log(Object.values(property));
+
+addProperty: function(property) {
   return pool.query(`
   INSERT INTO properties (title, description, owner_id, cover_photo_url, thumbnail_photo_url, cost_per_night, parking_spaces, number_of_bathrooms, number_of_bedrooms, province, city, country, street, post_code) 
   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
   RETURNING *;
 `, [property.title, property.description, property.owner_id, property.cover_photo_url, property.thumbnail_photo_url, property.cost_per_night, property.parking_spaces, property.number_of_bathrooms, property.number_of_bedrooms, property.province, property.city, property.country, property.street, property.post_code])
 .then(res => {
-  console.log(res.rows);
   return res.rows
 })
 .catch(err => err);
-
 }
 
-exports.addProperty = addProperty;
+}
