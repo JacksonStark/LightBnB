@@ -20,7 +20,7 @@ const getUserWithEmail = function(email) {
   return pool.query(`
     SELECT *
     FROM users
-    WHERE email = $1
+    WHERE email = $1;
   `, [email])
   .then(res => res.rows[0])
   .catch(err => err);
@@ -36,8 +36,8 @@ const getUserWithId = function(id) {
   return pool.query(`
     SELECT *
     FROM users
-    WHERE id = $1
-  `, [id])
+    WHERE id = $1;
+  `, [Number(id)])
   .then(res => res.rows[0])
   .catch(err => err);
 
@@ -55,7 +55,7 @@ const addUser =  function(user) {
   return pool.query(`
     INSERT INTO users (name, email, password)
     VALUES ($1, $2, $3)
-    RETURNING *
+    RETURNING *;
   `, [user.name, user.email, user.password])
   .then(res => res.rows[0])
   .catch(err => err);
@@ -104,11 +104,11 @@ exports.getAllReservations = getAllReservations;
 const getAllProperties = function(options, limit = 10) {
 
   const queryParams = [];
-
+  console.log('beep boop');
   let queryString = `
   SELECT properties.*, AVG(property_reviews.rating) as average_rating
   FROM properties
-  JOIN property_reviews ON property_id = properties.id
+  LEFT JOIN property_reviews ON property_id = properties.id
   `;
 
   if (options.city) {
@@ -116,9 +116,10 @@ const getAllProperties = function(options, limit = 10) {
     queryString += `${queryParams.length === 1 ? 'WHERE' : 'AND'} city LIKE $${queryParams.length} `;
   }
 
-  if (options.owner_id) {
-    queryParams.push(`${options.owner_id}`);
-    queryString += `${queryParams.length === 1 ? 'WHERE' : 'AND'} owner_id = $${queryParams.length} `;
+  if (options.owner_id) { // NO INPUT FOR THIS, BUT WE'LL LEAVE IT...
+  console.log(options.owner_id);
+  queryParams.push(Number(options.owner_id));
+  queryString += `${queryParams.length === 1 ? 'WHERE' : 'AND'} owner_id = $${queryParams.length} `;
   }
 
   if (options.minimum_price_per_night) {
@@ -150,35 +151,8 @@ const getAllProperties = function(options, limit = 10) {
 
   return pool.query(queryString, queryParams)
   .then(res => res.rows);
-
-
-
-
-
-
-
-
-
-
-  return pool.query(`
-    SELECT properties.*, AVG(property_reviews.rating) as average_rating
-    FROM properties
-    JOIN property_reviews ON property_id = properties.id
-    WHERE city LIKE '%ancouv%'
-    GROUP BY properties.id
-    HAVING AVG(property_reviews.rating) >= 4
-    ORDER BY cost_per_night
-    LIMIT $2;
-  `, [limit])
-  .then(res => res.rows)
-  .catch(err => err);
-
-  // const limitedProperties = {};
-  // for (let i = 1; i <= limit; i++) {
-  //   limitedProperties[i] = properties[i];
-  // }
-  // return Promise.resolve(limitedProperties);
 }
+
 exports.getAllProperties = getAllProperties;
 
 
@@ -188,9 +162,19 @@ exports.getAllProperties = getAllProperties;
  * @return {Promise<{}>} A promise to the property.
  */
 const addProperty = function(property) {
-  const propertyId = Object.keys(properties).length + 1;
-  property.id = propertyId;
-  properties[propertyId] = property;
-  return Promise.resolve(property);
+  console.log('hi')
+  console.log(Object.values(property));
+  return pool.query(`
+  INSERT INTO properties (title, description, owner_id, cover_photo_url, thumbnail_photo_url, cost_per_night, parking_spaces, number_of_bathrooms, number_of_bedrooms, province, city, country, street, post_code) 
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+  RETURNING *;
+`, [property.title, property.description, property.owner_id, property.cover_photo_url, property.thumbnail_photo_url, property.cost_per_night, property.parking_spaces, property.number_of_bathrooms, property.number_of_bedrooms, property.province, property.city, property.country, property.street, property.post_code])
+.then(res => {
+  console.log(res.rows);
+  return res.rows
+})
+.catch(err => err);
+
 }
+
 exports.addProperty = addProperty;
